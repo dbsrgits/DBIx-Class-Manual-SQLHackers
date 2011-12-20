@@ -22,11 +22,11 @@ DBIx::Class::Manual::SQLHackers::TOC - DBIx::Class for SQL Hackers - TOC
 
 =head AUTHOR
 
-Jess Robisnson L<http://metacpan.org/author/JROBINSON>
+Jess Robinson <castaway@desert-island.me.uk>, L<http://metacpan.org/author/JROBINSON>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2010 - 2011 the DBIx::Class L</AUTHOR>
+Copyright (c) 2010 - 2011 the L</AUTHOR>
 
 =head1 LICENSE
 
