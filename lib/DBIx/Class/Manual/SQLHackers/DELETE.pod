@@ -1,0 +1,127 @@
+=head1 NAME
+
+DBIx::Class::Manual::SQLHackers::DELETE - DBIx::Class for SQL Hackers - DELETE
+
+=over
+
+=item L<Introduction|DBIx::Class::Manual::SQLHackers::Introduction>
+
+=item L<CREATE|DBIx::Class::Manual::SQLHackers::CREATE>
+
+=item L<INSERT|DBIx::Class::Manual::SQLHackers::INSERT>
+
+=item L<SELECT|DBIx::Class::Manual::SQLHackers::SELECT>
+
+=item L<UPDATE|DBIx::Class::Manual::SQLHackers::UPDATE>
+
+=item DELETE
+
+=item L<BEGIN, COMMIT|DBIx::Class::Manual::SQLHackers::Transactions>
+
+=back
+
+=head1 DELETEing data
+
+=head2 Delete a single row based on the primary key
+
+    DELETE FROM users
+    WHERE id = 1;
+
+The simplest form of delete removes a single row from a table using
+the primary key value. We B<find> the row, then call the B<delete>
+method on it. B<delete> can be called on any result row object.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<find> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to delete:
+
+        my $fred_user = $schema->resultset('User')->find({ id => 1 });
+
+=item 3. Call B<delete> on the row object:
+
+        $fred_user->delete;
+
+=back
+
+This can also be done as one statement, skipping the extra temporary
+variable, if it is not needed later:
+
+    $schema->resultset('User')->find({ id => 1 })->delete;
+
+In the first variant, the $fred_user row object will still contain the
+last known contents of Fred's data. The *in\_storage* value will be
+set to false (0), showing that the row object is not connected to a
+database row.
+
+=head2 Delete one or more rows based on a WHERE clause
+
+    DELETE FROM posts
+    WHERE created_date <= '2000-01-01';
+
+Use a ResultSet to define the WHERE clause using B<search>, then call
+the B<delete> method on it directly.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to delete:
+
+        my $old_posts = $schema->resultset('Post')->search({ 
+          created_date => { '<=' => '2000-01-01' },
+        });
+
+=item 3. Call B<delete> on the row object:
+
+        $old_posts->delete;
+
+=back
+
+Unlike the single row deletion above, the contents of the rows to be
+deleted are never fetched from the database, so no record of them now
+remains.
+
+NOTE: Calling B<delete> on a ResultSet object will not run any
+overridden B<delete> methods in your Result Classes or any loaded
+Components. To force these to run, call B<delete_all> instead:
+
+    $old_posts->delete_all();
+
+This will also issue a separate delete statement for each row to be removed.
+
+=head2 Cascading deletes
+
+    DELETE FROM users
+    WHERE id = 1;
+    
+    DELETE FROM comments
+    WHERE user_id = 1;
+
+
+Cascading deletes ensure the integrity of your data, if a User row is
+removed, then any items belonging to that user (for example comments
+created by the user), should also be removed.
+
+NOTE: This is a rather drastic action, to prevent problems in your
+application, consider de-activating accounts instead of removing them!
+
+By default, DBIx::Class will cascade deletes for the following types
+of relationships: B<has_many>, B<has_one>, B<might_have>. That is, it
+will automatically issue the above statements. See
+L<DBIx::Class::Manual::SQLHackers::CREATE/Table creation with references> for how to set these up.
+
+Ideally, your database should cascade deletes for you, and will if references are correctly set up. In this case, you can turn off DBIx::Class' extra cascading statements:
+
+    __PACKAGE__->has_many('posts', 
+                          'MyDatabase::Schema::Result::Post', 
+                          'user_id',
+                          { cascade_delete => 0 });
+
+
+

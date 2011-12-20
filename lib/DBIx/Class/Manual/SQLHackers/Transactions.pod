@@ -1,0 +1,47 @@
+=head1 NAME
+
+DBIx::Class::Manual::SQLHackers::DELETE - DBIx::Class for SQL Hackers - DELETE
+
+=over
+
+=item L<Introduction|DBIx::Class::Manual::SQLHackers::Introduction>
+
+=item L<CREATE|DBIx::Class::Manual::SQLHackers::CREATE>
+
+=item L<INSERT|DBIx::Class::Manual::SQLHackers::INSERT>
+
+=item L<SELECT|DBIx::Class::Manual::SQLHackers::SELECT>
+
+=item L<UPDATE|DBIx::Class::Manual::SQLHackers::UPDATE>
+
+=item L<DELETE|DBIx::Class::Manual::SQLHackers::DELETE>
+
+=item BEGIN, COMMIT
+
+=back
+
+=head1 Transactions
+
+    BEGIN;
+    SELECT users.id, users.username FROM users WHERE id = 1;
+    UPDATE users SET username = 'fred' WHERE id = 1;
+    COMMIT;
+
+To create a transaction, put all your changes inside a coderef, and pass it to the B<txn_do> method on the Schema object.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<txn_do> method on the Schema object:
+
+        $schema->txn_do( sub {
+           my $user = $schema->resultset('User')->find({ id => 1 });
+           die if(!$user);
+           $user->update({ username => 'fred' });
+        } );
+
+=back
+

@@ -1,0 +1,528 @@
+=head1 NAME
+
+DBIx::Class::Manual::SQLHackers::SELECT - DBIx::Class for SQL Hackers - SELECT
+
+=over
+
+=item L<Introduction|DBIx::Class::Manual::SQLHackers::Introduction>
+
+=item L<CREATE|DBIx::Class::Manual::SQLHackers::CREATE>
+
+=item L<INSERT|DBIx::Class::Manual::SQLHackers::INSERT>
+
+=item SELECT
+
+=item L<UPDATE|DBIx::Class::Manual::SQLHackers::UPDATE>
+
+=item L<DELETE|DBIx::Class::Manual::SQLHackers::DELETE>
+
+=item L<BEGIN, COMMIT|DBIx::Class::Manual::SQLHackers::Transactions>
+
+=back
+
+=head1 SELECTing data
+
+=head2 Fetching rows from a query
+
+    SELECT id, username, dob, realname, password
+    FROM users;
+
+In DBIx::Class queries are represented by ResultSet objects. These are created by calling B<search> on existing resultsets, passing new search conditions. A query is not run against the database until data is explicitly requested. 
+
+You can either fetch all the data at once, or iterate over the results:
+
+=over 
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. The B<resultset> method returns a ResultSet representing a query with no conditions on the given B<Source>:
+
+        my $user_resultset = $schema->resultset('User');
+
+=item 3. Fetch all users as Row objects using the B<all> method:
+
+        my @users = $user_resultset->all();
+
+=item 4. OR, fetch each user as a Row object using B<next>:
+
+        while( my $user = $user_resultset->next()) {
+        }
+
+=back
+
+=head2 Fetching column values from a Row object
+
+The Row object represents the results from a single data source table in the query. The column values can be retrieved by using the accessor methods named after the column names. (By default that is, accessors can be changed in the L<Result Class|DBIx::Class::ResulSource> if needed).
+
+    print $user->username;
+
+See the [DBIx::Class::Row]() documentation for more things you can do
+with Row objects.
+    
+=head2 Simple SELECT, one row via the primary key
+
+    SELECT id, username, dob, realname, password
+    FROM users
+    WHERE id = 1;
+
+The B<find> method on a ResultSet is a shortcut to create a query based on the inputs, run the query, and return a single row as a Row object result. 
+
+If passed a condition which matches multiple rows, a warning is given.
+
+=over 
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<find> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
+
+        my $fred_user = $schema->resultset('User')->find({ id => 1 });
+
+=back
+
+B<$fred_user> is a now Row object.
+
+=head2 Simple SELECT, one row via a unique key
+
+    SELECT id, username, dob, realname, password
+    FROM users
+    WHERE username = 'fredbloggs';
+
+B<find> also works well on unique constraints, for example the username of our user. Unique constraints can be defined on Result classes using B<add_unique_constraint> (See L<CREATE|DBIx::Class::Manual::SQLHackers::CREATE>.
+
+=over 
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<find> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
+
+        my $fred_user = $schema->resultset('User')->find(
+          { username => 'fredbloggs' },
+          { key => 'uniq_username' }
+        );
+
+=back
+
+"uniq_username" is the name of a constraint defined on the User L<ResultSource|DBIx::Class::ResultSource> which specifies that the username column is unique across the table. The second argument to B<find> is a set of attributes, of which the "key" attribute defines which constraint to do a lookup on.
+
+=head2 Simple SELECT, with WHERE condition
+
+    SELECT id, username, dob, realname, password
+    FROM users
+    WHERE dob = '1910-02-01';
+
+To select all users born on the date '1910-02-01', we can use the B<search> method to prepare a query. Search returns a new resultset with the search conditions stored in it, it does not run the query on the database.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
+
+        my $dob_search = $schema->resultset('User')->search(
+          { dob => '1910-02-01' }
+        );
+
+=back
+
+To run the query, use the B<all> or B<next> methods show at the beginning of this page.
+
+=head2 SELECT with different WHERE conditions
+
+Below are shown some common SQL where conditions. The syntax for these is parsed by a module called L<SQL::Abstract> which DBIx::Class uses. They can all be passed to the B<search> method as conditions.
+
+    SELECT id, username, dob, realname, password
+    FROM users
+    WHERE username LIKE 'fred%';
+
+    my $name_search = $schema->resultset('User')->search(
+      { username => { '-like' => 'fred%' } }
+    );
+
+    SELECT id, username, dob, realname, password
+    FROM users
+    WHERE dob BETWEEN '1910-01-01' AND '1910-12-31';
+
+    my $year_dob_search = $schema->resultset('User')->search(
+      { dob => { '-between' => ['1910-01-01', '1910-12-31'] } }
+    );
+
+    SELECT id, username, dob, realname, password
+    FROM users
+    WHERE dob IN ('1910-02-01', '1910-02-02');
+
+    my $feb_dob_search = $schema->resultset('User')->search(
+      { dob => { '-in' => ['1910-02-01', '1910-02-02'] } }
+    );
+
+    SELECT id, username, dob, realname, password
+    FROM users
+    WHERE dob >= 1911-01-01;
+    
+    my $next_year_dob = $schema->resultset('User')->search(
+      { dob => { '>=', '1911-01-01' } }
+    );
+    
+
+=head2 SELECT with WHERE condition on JOINed table
+
+    SELECT posts.id, created_date, title, post
+    FROM posts
+    JOIN users user ON user.id = posts.user_id
+    WHERE user.username = 'fredbloggs';
+
+The second argument to B<search> is a hashref of attributes to apply to the query. One of them is B<join>, which is used to connect to other tables using the relationships defined in the Result classes.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
+
+        my $freds_posts = $schema->resultset('Post')->search(
+          { 'user.username' => 'fredbloggs' },
+          { join => 'user' }
+        );
+
+=back
+
+Note that the string "user", used twice here, refers to the B<name> of the L<Relationship|DBIx::Class::Manual::SQLHackers::CREATE> between the "Post" source and the "User" source. All dealings with related tables are refered to by relationship names, not table names.
+
+To run the query, use the B<all> or B<next> methods show at the beginning of this page.
+
+=head2 SELECT with fewer columns
+
+    SELECT id, title
+    FROM posts
+
+There's usually little reason to do this sort of query, as fetching all the data in a row doesn't cost any more time than fetching some of it. Unless of course your source is a View with calculations, or has huge blobs, or.. Okay, you might well want to do this occasionally.
+
+B<find> will always pull all the columns for the found row, so use the *search* method for this.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
+
+        my $post_titles = $schema->resultset('Post')->search(
+          { },
+          { columns => [qw/id title/] }
+        );
+
+=back
+
+Note that accessors for other columns not fetched will return B<undef>. To discover whether a columns data has been loaded or not, use the B<has_column_loaded> method.
+    
+
+=head2 SELECT with aggregates
+
+    SELECT COUNT(*)
+    FROM users;
+
+To find out how many users exist. This simple one can be achieved with a built-in method, B<count>.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the *count* method on the resultset for the [Source] you wish to fetch data from:
+
+        my $posts_count = $schema->resultset('Post')->count();
+
+=back
+
+The result is not an object, just a number.
+
+    SELECT SUM(amount)
+    FROM prices;
+
+A rather pointless exercise in summing an entire "amount" column from an imaginary "prices" table. This can be done in several ways, first, the built-in L<DBIx::Class::ResultSet::Column> method, by calling B<get_column>.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<get_column> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from, then the B<sum> method:
+
+        my $sum_prices = $schema->resultset('Price')->get_column('amount')
+          ->sum();
+
+=back
+
+The result is just a number.
+
+The alternate way uses the B<search> method and is easier to build further refinements into.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
+
+        my $sum_prices_rs = $schema->resultset('Price')->search(
+          { },
+          { select => [ { SUM => 'amount'} ],
+            as     => [ 'sum_amount' ] }
+        );
+
+=back
+
+The result is a resultset. To fetch the one-row result, call B<single> or B<all>. The resulting Row object will not contain an accessor for the virtual "sum_amount" column, we'll need to fetch it using the Row method B<get_column>.
+
+    print $sum_prices_rs->single->get_column('sum_amount');
+
+=head2 SELECT from JOINed tables
+
+    SELECT users.id, username, posts.id, posts.title
+    FROM users
+    JOIN posts posts ON posts.used_id = users.id
+    
+To select data from other tables, use the B<join> attribute to name the table relationships to create a JOIN clause to.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to group data on:
+
+        my $posts_count_per_user = $schema->resultset('User')->search(
+          { },
+          { select => [ qw/id username posts.id posts.title/ ],
+            as     => [ qw/id username posts.id posts.title/ ],
+            join => 'posts',
+          }
+        );
+
+=back
+
+Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship> between the "User" source and the "Post" source.
+
+To retrieve the extra data, call the usual relationship accessor:
+
+    while( my $row = $sorted_users->next) {
+      print "user/post: ", $row->username;
+      print $_->title for $row->posts;
+      print "\n";
+    }
+
+
+=head2 SELECT with GROUP BY
+
+    SELECT users.id, username, COUNT(posts.id)
+    FROM users
+    JOIN posts posts ON posts.used_id = users.id
+    GROUP BY users.id, username;
+
+To group your results, use the B<group_by> attribute on a B<search> method. We also use the B<select> and B<as> attributes to select and name a subset of columns.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the *search* method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to group data on:
+
+        my $posts_count_per_user = $schema->resultset('User')->search(
+          { },
+          { select => [ qw/id username/, { count => 'posts.id' } ],
+            as     => [ qw/id username post_count/ ],
+            join => 'posts',
+            group_by => [qw/id username/],
+          }
+        );
+
+=back
+
+Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship> between the "User" source and the "Post" source.
+
+The results will contain two columns with the usual accessors, "id" and "username", and one with no accessor, as it is a virtual column.
+
+    while( my $row = $posts_count_per_user->next) {
+      print "user: ", $row->username, " posts: ", $row->get_column('post_count');
+    }
+
+Note: Remember to disambiguate the columns when joining two tables with identical column names.
+
+=head2 SELECT with simple ORDER BY
+
+    SELECT users.id, username, dob, realname, password, posts.title
+    FROM users
+    JOIN posts posts ON posts.used_id = users.id
+    ORDER BY username, posts.title;
+
+To sort the results, use the B<order_by> attributes on a B<search> method. Content can of course be ordered by columns in the current table, or in a joined table
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to sort data on:
+
+        my $sorted_users = $schema->resultset('User')->search(
+          { },
+          { '+select' => [ qw/posts.id posts.title/ ],
+            '+as'     => [ qw/posts.id posts.title/ ],
+            join => 'posts',
+            order_by => [qw/username posts.title/],
+          }
+        );
+
+=back
+
+Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship> between the "User" source and the "Post" source.
+
+The results will be ordered by username, then post title, ready for outputting.
+
+Note how we have added the title of each post, this prevents us having to fire off a second query to fetch the post data to output it. The B<+select> attribute specifies an extended set of columns to fetch, in addition to the columns of the main query table.
+
+To retrieve the extra data, call the usual relationship accessor:
+
+    while( my $row = $sorted_users->next) {
+      print "user/post: ", $row->username;
+      print $_->title for $row->posts;
+      print "\n";
+    }
+
+=head2 SELECT with HAVING
+
+    SELECT users.id, username, dob
+    FROM users
+    JOIN posts posts ON posts.used_id = users.id
+    GROUP BY users.id, username;
+    HAVING count(posts.id) = 1
+
+To add a B<having> clause to your query, use the corresponding B<having> attribute.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to filter data on:
+
+        my $filtered_users = $schema->resultset('User')->search(
+          { },
+          { '+select' => [ qw/me.id me.username me.dob/ ],
+            '+as'     => [ qw/me.id me.username me.dob/ ],
+            join => 'posts',
+            group_by => [qw/me.id me.username/],
+            having   => [{ 'posts.id' => 1 }],
+          }
+        );
+
+=back
+
+Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship> between the "User" source and the "Post" source.
+
+The results will be filtered by the HAVING clause.
+
+=head2 SELECT with DISTINCT
+
+    SELECT DISTINCT(posts.title)
+    FROM posts
+
+DBIx::Class doesn't currently produce a B<DISTINCT> keyword, but will output a B<GROUP BY> to simulate the same effect.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to group data on:
+
+        my $distinct_posts = $schema->resultset('Post')->search(
+          { },
+          { columns => ['me.title'],
+            distinct => 1,
+          }
+        );
+
+=back
+
+This actually outputs:
+
+    SELECT posts.title
+    FROM posts
+    GROUP BY posts.title
+
+=head2 SELECT ... FOR UPDATE
+
+    SELECT users.id, users.username, users.dob
+    FROM users
+    FOR UPDATE
+
+To fetch data and lock it for updating from other transactions, use the B<for> attribute and pass it the value B<update>. This should be done inside a L<Transaction|DBIx::Class::Manual::SQLHackers::Transaction>.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to lock data on:
+
+        my $locked_posts = $schema->resultset('User')->search(
+          { },
+          { columns => [qw/me.id me.username me.dob/],
+            for     => 'update'
+          }
+        );
+
+=back
+
+The resultset and rows will be returned as normal, and can be used to update the rows without worrying about other 
+
+=head2 SELECT with LIMIT
+
+    SELECT users.id, users.username
+    FROM users
+    ORDER BY user.dob DESC
+    LIMIT 10;
+
+To reduce the set or rows fetched, use the B<rows> attribute.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to limit data on:
+
+        my $limited_posts = $schema->resultset('User')->search(
+          { },
+          { columns  => [qw/me.id me.username/],
+            order_by => { '-desc' => ['user.dob'] },
+            rows     => 10,
+          }
+        );
+
+This will return exactly 10 row objects, sorted by descending date of birth of the users.
+
+=back
+

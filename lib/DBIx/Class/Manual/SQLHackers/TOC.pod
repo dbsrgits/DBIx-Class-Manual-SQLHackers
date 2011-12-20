@@ -1,0 +1,36 @@
+=head1 NAME
+
+DBIx::Class::Manual::SQLHackers::TOC - DBIx::Class for SQL Hackers - TOC
+
+=over
+
+=item L<Introduction|DBIx::Class::Manual::SQLHackers::Introduction>
+
+=item L<CREATE|DBIx::Class::Manual::SQLHackers::CREATE>
+
+=item L<INSERT|DBIx::Class::Manual::SQLHackers::INSERT>
+
+=item L<SELECT|DBIx::Class::Manual::SQLHackers::SELECT>
+
+=item L<UPDATE|DBIx::Class::Manual::SQLHackers::UPDATE>
+
+=item L<DELETE|DBIx::Class::Manual::SQLHackers::DELETE>
+
+=item L<BEGIN, COMMIT|DBIx::Class::Manual::SQLHackers::Transactions>
+
+=back
+
+=head AUTHOR
+
+Jess Robisnson L<http://metacpan.org/author/JROBINSON>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2010 - 2011 the DBIx::Class L</AUTHOR>
+
+=head1 LICENSE
+
+This library is free software and may be distributed under the same terms
+as perl itself.
+
+=cut

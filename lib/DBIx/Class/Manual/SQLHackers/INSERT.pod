@@ -1,0 +1,173 @@
+=head1 NAME
+
+DBIx::Class::Manual::SQLHackers::INSERT - DBIx::Class for SQL Hackers - INSERT
+
+=over
+
+=item L<Introduction|DBIx::Class::Manual::SQLHackers::Introduction>
+
+=item L<CREATE|DBIx::Class::Manual::SQLHackers::CREATE>
+
+=item INSERT
+
+=item L<SELECT|DBIx::Class::Manual::SQLHackers::SELECT>
+
+=item L<UPDATE|DBIx::Class::Manual::SQLHackers::UPDATE>
+
+=item L<DELETE|DBIx::Class::Manual::SQLHackers::DELETE>
+
+=item L<BEGIN, COMMIT|DBIx::Class::Manual::SQLHackers::Transactions>
+
+=back
+
+=head1 INSERTing data
+
+    INSERT INTO users (id, username, dob, realname, password) 
+    VALUES (1, 'fredbloggs', '1910-02-01', 'Fred Bloggs', 'secretpass');
+
+=head2 Simple insertion, populating rows
+
+The B<populate> method is for inserting chunks of data to pre-populate / initialise a database with a set of known values. In void context it uses DBI's fast "insert_bulk" method.
+
+In scalar or list context populate is a proxy to the B<create> method (on which more below), and returns Row objects.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<populate> method for the [Source] you wish to insert data into:
+
+        $schema->populate('User', [
+                      [ qw/id username, dob, realname, password/ ],
+                      [ 1, 'fredbloggs', '1910-02-01', 
+                            'Fred Bloggs', 'secretpass'],
+                      ]);
+
+=back 
+
+Note that in void context you can skip passing primary key values that will be supplied by the database. However no automatic assignment of foreign key values will be made, nor will any code in your Result classes be run (eg InflateColumn components).
+
+=head2 Inserting with Row objects
+
+    INSERT INTO users (username, dob, realname, password) 
+    VALUES ('fredbloggs', '1910-02-01', 'Fred Bloggs', 'secretpass');
+
+In the course of your application, you will often want to retrieve data from a user, insert it into the database, then continue to use or manipulate the resulting object.
+
+=over
+
+=item 1. Create a Schema object:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+(ideally you will always have one of these handy, no need to make many connections to the database)
+
+=item 2. Create a User object:
+
+        my $newuser = $schema->resultset('User')->new({ 
+          username  => 'fredbloggs',
+          dob       => '1910-02-01',
+          realname  => 'Fred Bloggs',
+          password  => 'secretpass',
+        });
+
+    $newuser is now a DBIx::Class::Row object, containing uninserted data. This can be verified by calling $newuser->in_storage, which will return false.
+
+=item 3. Insert the users data into the database:
+
+        $newuser->insert();
+
+    $newuser has been updated to contain the auto-incremented id value in its primary key field (id). $newuser->in_storage now returns true.
+
+You can also shortcut these two methods if you don't need to build up the Row object before inserting:
+
+        ## new+insert in one
+        my $newuser = $schema->resultset('User')->create({ 
+          username  => 'fredbloggs',
+          dob       => '1910-02-01',
+          realname  => 'Fred Bloggs',
+          password  => 'secretpass',
+        });
+
+Now *$newuser* is a Row object containing data that represents what is in the database.
+
+=back
+
+=head2 Add a post for this user
+
+    INSERT INTO posts (user_id, created_date, title, post)
+    VALUES (1, '2010-03-24T09:00:00', 'First post!', 'Just testing my blog');
+
+Now that we have a user, they would like to submit their first blog post. We already have the user object, from creation, or from the session when they logged in, so we can create posts using it. 
+
+=over
+
+=item 1. Add a post for an existing user:
+
+        ## Remember, create == new and insert.
+        my $post = $user->create_related('posts', {
+          created_date => '2010-03-24T09:00:00',
+          title        => 'First post!',
+          post         => 'Just testing my blog',
+        });
+
+=back
+
+This does not require us to dig out the user's database id and pass it to the insert call for the posts table, as it is already contained in the User object.
+
+=head2 Insert a new user and their first post
+
+    INSERT INTO users (username, dob, realname, password) 
+    VALUES ('fredbloggs', '1910-02-01', 'Fred Bloggs', 'secretpass');
+
+    INSERT INTO posts (user_id, created_date, title, post)
+    VALUES (1, '2010-03-24T09:00:00', 'First post!', 'Just testing my blog');
+
+This is a somewhat contrived example, as hopefully you'll want to create the user, and confirm who they are via email confirmation or similar, before allowing them to submit a blog post. Maybe it can be used for commenters and comments..
+
+=over
+
+=item 1. Create a Schema object:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+(You still have one of these, right?)
+
+=item 2. Collect the User and first Post data:
+
+        my $user_and_post = { 
+          username  => 'fredbloggs',
+          dob       => '1910-02-01',
+          realname  => 'Fred Bloggs',
+          password  => 'secretpass',
+          posts     => [ {
+             created_date => '2010-03-24T09:00:00',
+             title        => 'First post!',
+             post         => 'Just testing my blog',
+          } ],
+        });
+
+=item 3. Create the User object together with the post data:
+
+        my $newuser = $schema->resultset('User')->new( $user_and_post );
+
+=item 4. Insert the user and post data into the database:
+
+        $newuser->insert();
+
+This also can be shortcut using B<create>:
+
+        ## new+insert in one
+        my $newuser = $schema->resultset('User')->create( $user_and_post );
+       
+=back
+
+=head2 Insert using a SELECT as input:
+
+    INSERT INTO users (id, username, dob, realname, password) 
+    SELECT (1, 'fredbloggs', '1910-02-01', 'Fred Bloggs', 'secretpass')
+    FROM nowhere;
+
+This is a TODO item for DBIC.

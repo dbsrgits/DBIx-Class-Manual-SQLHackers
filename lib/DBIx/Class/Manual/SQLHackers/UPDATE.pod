@@ -1,0 +1,251 @@
+=head1 NAME
+
+DBIx::Class::Manual::SQLHackers::UPDATE - DBIx::Class for SQL Hackers - UPDATE
+
+=over
+
+=item L<Introduction|DBIx::Class::Manual::SQLHackers::Introduction>
+
+=item L<CREATE|DBIx::Class::Manual::SQLHackers::CREATE>
+
+=item L<INSERT|DBIx::Class::Manual::SQLHackers::INSERT>
+
+=item L<SELECT|DBIx::Class::Manual::SQLHackers::SELECT>
+
+=item UPDATE
+
+=item L<DELETE|DBIx::Class::Manual::SQLHackers::DELETE>
+
+=item L<BEGIN, COMMIT|DBIx::Class::Manual::SQLHackers::Transactions>
+
+=back
+
+=head1 UPDATEing data
+
+=head2 Delayed update versus direct update
+
+Rows may be updated in one of two ways. You can create an object
+representing an existing database table row, and hold it in your
+programmes memory, passing it around from function to function,
+changing its values, before actually updating the contents into the
+database. This is a delayed update.
+
+A direct update still involves fetching the existing row from the
+database, but instead of storing new column values in the Row object,
+the update method is called and passed the set of new values to store
+in the table.
+
+NOTE: Running a direct update on a row object that already has changed
+values, will *also* apply those values to the database. If values are
+changed both on the object, and in the update method arguments, the
+argument values take precedence.
+
+=head2 Updating a row in memory
+
+To create a Row object for delayed update (or other manipulations), first fetch it from the database as described in L<Simple SELECT|DBIx::Class::Manual::SQLHackers::SELECT/Simple SELECT>.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<find> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to update the contents of:
+
+        my $fred_user = $schema->resultset('User')->find({ id => 1 });
+
+    B<$fred_user>'s contents can now be changed using the accessor
+methods created by B<add_columns>, back in
+L<CREATE|DBIx::Class::Manual::SQLHackers::CREATE>. These are generally named
+after the columns in the database, so to change fred's real name, use
+the B<realname> method.
+
+=item 3. Call the B<realname> accessor method on the $fred_user object:
+
+        $fred_user->realname("John Bloggs");
+        
+    This value has not yet changed in the database, we can make the actual
+update by calling *update:
+
+=item 4. Update the set value(s) into the database:
+
+        $fred_user->update();
+
+=back
+
+=head2 Update a single row with simple values
+
+    UPDATE users
+    SET username = 'new@email.address'
+    WHERE id = 1;
+    
+To update an existing row, first B<find> it using the methods shown in L<DBIx::Class::Manual::SQLHackers::SELECT/Simple SELECT, one row via the primary key> or L<DBIx::Class::Manual::SQLHackers::SELECT/Simple SELECT, one row via a unique key>, for example:
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<find> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
+
+        my $fred_user = $schema->resultset('User')->find({ id => 1 });
+
+    The Row object has an B<update> method that will change the values on
+the object, and send an UPDATE query to the database.
+
+=item 3. Call the B<update> method, passing it a hashref of new data:
+
+        $fred_user->update({ username => 'new@email.address' }); 
+
+=back
+
+See also: L</Direct update versus delayed update>.
+
+=head2 Update multiple rows with simple values
+
+    -- Warning, pointless example!
+    UPDATE users
+    SET dob = '2010-08-16'
+    WHERE realname LIKE 'jess%';
+
+To update a whole set of rows, or all of them, we first need to create a ResultSet object representing the query conditions that would be needed to select that same set of rows. We need to use B<search>, then we use the B<update> method on the ResultSet.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
+
+        my $user_search = $schema->resultset('User')->search(
+          { realname => { like => 'jess%' } }
+        );
+
+=item 3. Call the B<update> method on the resultset to change the matching rows:
+
+        $user_search->update({ dob => '2010-08-16' });
+
+=back
+
+=head2 Update a row or rows using a column calculation
+
+    -- Yet another pointless example
+    UPDATE users
+    SET username = username || '.uk'
+    WHERE id = 1;
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<find> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
+
+        my $fred_user = $schema->resultset('User')->find({ id => 1 });
+
+The Row object has an B<update> method that will change the values on
+the object, and send an UPDATE query to the database.
+
+=item 3. Call the B<update> method, passing it a hashref of new data:
+
+        $fred_user->update({ username => \['username || ?', '.uk'] }); 
+
+The \[ .. ] syntax here is described in L<SQL::Abstract>
+documentation, used for passing bind parameters.
+
+=back
+
+=head2 Update a row based on data in other tables
+
+    -- Slightly less pointless example
+    UPDATE posts 
+    SET title = user.username || title
+    JOIN users user ON user.id = posts.user_id;
+
+Joining two tables for an update is a similar sort of exercise to
+joining them for a select query and using data from both.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<search> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to update data in, joining to the second table:
+
+        my $posts = $schema->resultset('Post')->search(
+          {},
+          { join => 'user' }
+        );
+
+    The B<join> key takes as an argument a nested structure of one or more relation names (see L<DBIx::Class::Manual::SQLHackers::CREATE>).
+
+=item 3. Call the B<update> method on the resultset to run the UPDATE statement:
+
+        $posts->update({ 'me.title' => \[ 'user.username || me.title' ] });
+
+=back
+
+=head2 Update or create a row
+
+    -- MySQL non-standardness (and another silly example)
+    INSERT INTO users ( ... ) 
+    VALUES ( ... )
+    ON DUPLICATE KEY UPDATE password = 'newpass';
+
+    -- OR:
+    BEGIN TRANSACTION;
+    SELECT id, username, dob, realname, password
+    FROM users
+    WHERE username = 'joebloggs';
+    
+    UPDATE users
+    SET id = ?, username = ?, dob = ?, realname = ?, password = ?;
+    COMMIT;
+    
+DBIx::Class does not produce the non-standard MySQL "ON DUPLICATE KEY
+UPDATE", instead it has a shortcut for combining *find* and *update*.
+
+To avoid race conditions, this should be done in a transaction.
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<txn_do> method on the schema object, passing it a coderef to execute inside the transaction:
+
+        $schema->txn_do( sub {
+
+=item 3. Call the B<update_or_create> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to update data in:
+
+        $schema->resultset('User')->update_or_create(
+          {
+            username => 'joebloggs',
+            dob => '2010-09-10',
+            realname = 'Joe Bloggs'
+          },
+          {
+            key => 'uniq_username'
+          }
+        );
+
+=item 4. Close off the transaction / coderef:
+
+        } );
+
+=back
+       
+A transaction is issued containing two statements, a B<SELECT> and then
+either an B<INSERT> or an B<UPDATE> depending on the results.
+
+Do not use this method if you definitely don't have either the primary
+key, or a unique index value available. The B<find> method used under
+the hood will probably not do what you expect. In this case, manually
+run a separate B<search> method call to check for existance, and then
+call B<create>.
+
