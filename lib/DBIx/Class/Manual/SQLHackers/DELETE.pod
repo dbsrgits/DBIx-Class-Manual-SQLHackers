@@ -53,8 +53,8 @@ variable, if it is not needed later:
     $schema->resultset('User')->find({ id => 1 })->delete;
 
 In the first variant, the $fred_user row object will still contain the
-last known contents of Fred's data. The *in\_storage* value will be
-set to false (0), showing that the row object is not connected to a
+last known contents of Fred's data. A call to L<$fred_user->in_storage|DBIx::Class::Row/in_storage> will return
+false (0), showing that the row object is no longer connected to a actual
 database row.
 
 =head2 Delete one or more rows based on a WHERE clause
