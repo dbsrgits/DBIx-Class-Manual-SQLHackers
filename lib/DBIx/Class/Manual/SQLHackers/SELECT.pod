@@ -37,7 +37,7 @@ You can either fetch all the data at once, or iterate over the results:
 
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
-=item 2. The B<resultset> method returns a ResultSet representing a query with no conditions on the given B<Source>:
+=item 2. The B<resultset> method returns a ResultSet representing a query with no conditions on the given B<ResultSource>:
 
         my $user_resultset = $schema->resultset('User');
 
@@ -58,7 +58,7 @@ The Row object represents the results from a single data source table in the que
 
     print $user->username;
 
-See the [DBIx::Class::Row]() documentation for more things you can do
+See the L<DBIx::Class::Row> documentation for more things you can do
 with Row objects.
     
 =head2 Simple SELECT, one row via the primary key
@@ -91,7 +91,7 @@ B<$fred_user> is a now Row object.
     FROM users
     WHERE username = 'fredbloggs';
 
-B<find> also works well on unique constraints, for example the username of our user. Unique constraints can be defined on Result classes using B<add_unique_constraint> (See L<CREATE|DBIx::Class::Manual::SQLHackers::CREATE>.
+B<find> also works well on unique constraints, for example the username of our user. Unique constraints can be defined on Result classes using B<add_unique_constraint> (See L<CREATE|DBIx::Class::Manual::SQLHackers::CREATE>).
 
 =over 
 
@@ -132,7 +132,7 @@ To select all users born on the date '1910-02-01', we can use the B<search> meth
 
 =back
 
-To run the query, use the B<all> or B<next> methods show at the beginning of this page.
+To run the query, use the B<all> or B<next> methods shown at the beginning of this page.
 
 =head2 SELECT with different WHERE conditions
 
@@ -206,6 +206,8 @@ To run the query, use the B<all> or B<next> methods show at the beginning of thi
 
 There's usually little reason to do this sort of query, as fetching all the data in a row doesn't cost any more time than fetching some of it. Unless of course your source is a View with calculations, or has huge blobs, or.. Okay, you might well want to do this occasionally.
 
+# this is completely false, is there a doc that states this that we need to fix?
+# find() takes all search() attributes, including things like prefetch
 B<find> will always pull all the columns for the found row, so use the *search* method for this.
 
 =over
@@ -223,7 +225,7 @@ B<find> will always pull all the columns for the found row, so use the *search* 
 
 =back
 
-Note that accessors for other columns not fetched will return B<undef>. To discover whether a columns data has been loaded or not, use the B<has_column_loaded> method.
+Note that accessors for other columns not fetched will return B<undef>, which is also the perl equivalent of the SQL C<NULL> value. To discover whether a columns data has been loaded or not, use L<DBIx::Class::Row/has_column_loaded>.
     
 
 =head2 SELECT with aggregates
@@ -279,8 +281,7 @@ The alternate way uses the B<search> method and is easier to build further refin
 
         my $sum_prices_rs = $schema->resultset('Price')->search(
           { },
-          { select => [ { SUM => 'amount'} ],
-            as     => [ 'sum_amount' ] }
+          { columns => { sum_amount => { SUM => 'amount'} } },
         );
 
 =back
@@ -307,8 +308,7 @@ To select data from other tables, use the B<join> attribute to name the table re
 
         my $posts_count_per_user = $schema->resultset('User')->search(
           { },
-          { select => [ qw/id username posts.id posts.title/ ],
-            as     => [ qw/id username posts.id posts.title/ ],
+          { columns => [ qw/id username posts.id posts.title/ ],
             join => 'posts',
           }
         );
@@ -333,7 +333,7 @@ To retrieve the extra data, call the usual relationship accessor:
     JOIN posts posts ON posts.used_id = users.id
     GROUP BY users.id, username;
 
-To group your results, use the B<group_by> attribute on a B<search> method. We also use the B<select> and B<as> attributes to select and name a subset of columns.
+To group your results, use the B<group_by> attribute on a B<search> method. We also use the B<columns>  attribute to select and name a subset of columns.
 
 =over
 
@@ -345,8 +345,7 @@ To group your results, use the B<group_by> attribute on a B<search> method. We a
 
         my $posts_count_per_user = $schema->resultset('User')->search(
           { },
-          { select => [ qw/id username/, { count => 'posts.id' } ],
-            as     => [ qw/id username post_count/ ],
+          { columns => [ qw/id username/, { post_count => { count => 'posts.id' } } ],
             join => 'posts',
             group_by => [qw/id username/],
           }
@@ -381,10 +380,10 @@ To sort the results, use the B<order_by> attributes on a B<search> method. Conte
 
 =item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to sort data on:
 
+# this will not collapse results (you will get users * (amount of posts || 1) as a result, sure you want to showcase this?
         my $sorted_users = $schema->resultset('User')->search(
           { },
-          { '+select' => [ qw/posts.id posts.title/ ],
-            '+as'     => [ qw/posts.id posts.title/ ],
+          { '+columns' => [ qw/posts.id posts.title/ ],
             join => 'posts',
             order_by => [qw/username posts.title/],
           }
@@ -396,7 +395,7 @@ Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship>
 
 The results will be ordered by username, then post title, ready for outputting.
 
-Note how we have added the title of each post, this prevents us having to fire off a second query to fetch the post data to output it. The B<+select> attribute specifies an extended set of columns to fetch, in addition to the columns of the main query table.
+Note how we have added the title of each post, this prevents us having to fire off a second query to fetch the post data to output it. The B<+columns> attribute specifies an extended set of columns to fetch, in addition to the columns of the main query table.
 
 To retrieve the extra data, call the usual relationship accessor:
 
@@ -411,7 +410,7 @@ To retrieve the extra data, call the usual relationship accessor:
     SELECT users.id, username, dob
     FROM users
     JOIN posts posts ON posts.used_id = users.id
-    GROUP BY users.id, username;
+    GROUP BY users.id, username, dob
     HAVING count(posts.id) = 1
 
 To add a B<having> clause to your query, use the corresponding B<having> attribute.
@@ -426,10 +425,9 @@ To add a B<having> clause to your query, use the corresponding B<having> attribu
 
         my $filtered_users = $schema->resultset('User')->search(
           { },
-          { '+select' => [ qw/me.id me.username me.dob/ ],
-            '+as'     => [ qw/me.id me.username me.dob/ ],
+          { 'columns' => [ qw/me.id me.username me.dob/ ],
             join => 'posts',
-            group_by => [qw/me.id me.username/],
+            group_by => [qw/me.id me.username me.dob/],
             having   => [{ 'posts.id' => 1 }],
           }
         );
@@ -445,7 +443,7 @@ The results will be filtered by the HAVING clause.
     SELECT DISTINCT(posts.title)
     FROM posts
 
-DBIx::Class doesn't currently produce a B<DISTINCT> keyword, but will output a B<GROUP BY> to simulate the same effect.
+To produce DISTINCT clauses, we need to use a hashref argument to the list of items passed to the B<columns> attribute.
 
 =over
 
@@ -453,22 +451,37 @@ DBIx::Class doesn't currently produce a B<DISTINCT> keyword, but will output a B
 
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
-=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to group data on:
+=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to find distinct rows on:
 
         my $distinct_posts = $schema->resultset('Post')->search(
           { },
-          { columns => ['me.title'],
-            distinct => 1,
+          { columns => [{ 'd_title' => { distinct => 'me.title' } }],
           }
         );
 
 =back
 
-This actually outputs:
+This can also be achieved by using the ResultSet method B<get_column>. The method returns a ResultSetColumn object based on the given column name argument, which can call SQL aggregate functions based upon the column of that data.
 
-    SELECT posts.title
-    FROM posts
-    GROUP BY posts.title
+So we can also do this, for single column DISTINCT clauses:
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<get_column> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to find distinct rows on:
+
+        my $rs_column = $schema->resultset('Post')->get_column('title');
+
+=item 3. Call the B<func> method on the resultset column object and pass it the name of the function to apply:
+
+        my $titles = $rs_column->func('distinct');
+
+=back
+
+The result will be an arrayref of the actual values. If a ResultSet object is needed for further refinement, use B<func_rs> instead.
 
 =head2 SELECT ... FOR UPDATE
 
@@ -497,14 +510,14 @@ To fetch data and lock it for updating from other transactions, use the B<for> a
 
 The resultset and rows will be returned as normal, and can be used to update the rows without worrying about other 
 
-=head2 SELECT with LIMIT
+=head2 SELECT with LIMIT and OFFSET
 
     SELECT users.id, users.username
     FROM users
     ORDER BY user.dob DESC
-    LIMIT 10;
+    LIMIT 10 OFFSET 11;
 
-To reduce the set or rows fetched, use the B<rows> attribute.
+To reduce the set of rows fetched, use the B<rows> and B<page> attributes. The value of B<page> will default to 1, which means no OFFSET will be applied.
 
 =over
 
@@ -519,10 +532,11 @@ To reduce the set or rows fetched, use the B<rows> attribute.
           { columns  => [qw/me.id me.username/],
             order_by => { '-desc' => ['user.dob'] },
             rows     => 10,
+            page     => 2,
           }
         );
 
-This will return exactly 10 row objects, sorted by descending date of birth of the users.
+This will return exactly 10 row objects, sorted by descending date of birth of the users, starting at the 11th row of the sorted result.
 
 =back
 

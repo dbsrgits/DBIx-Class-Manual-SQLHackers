@@ -22,9 +22,7 @@ The part we can't do much about is the SQL in the code. We can move it around, p
 
 Why would you not want SQL in your Perl code? For a start, it's just a string to pass to the database interpreter, there is no syntax checking at the Perl compilation level. Thus it fails late, not early. Your editor will also not syntax check what it just sees as strings of text.
 
-Modern Perl should also leverage OO where it can. DBI is a low level library that gets things right, but returns plain hashes and arrays, not objects.
-
-Perl ORMs still use DBI underneath, extending it to catch coding errors early (names of columns, SQL clauses), and to return the results as objects containing the database values, which work just like any other Perl object.
+Modern Perl should also leverage code reuse and OO where it can. DBIx::Class promotes code reuse by allowing you to add methods for common queries, fetch related data in one query and cache data, also without refetching. DBIC uses the DBI library underneath, which gets things right, but returns plain hashes and arrays, not objects.
 
 DBIx::Class solves these issues, you write your SQL in perl instead of plain text. The syntax will be checked for you, existance of columns, catching typos and so on. It uses objects so that you can write re-usable queries, and string methods together to create complex queries. You define the database layout once, or you export it from your actual database (with ability to re-export on update).
 

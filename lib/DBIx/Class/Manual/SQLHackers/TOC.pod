@@ -20,7 +20,7 @@ DBIx::Class::Manual::SQLHackers::TOC - DBIx::Class for SQL Hackers - TOC
 
 =back
 
-=head AUTHOR
+=head1 AUTHOR
 
 Jess Robinson <castaway@desert-island.me.uk>, L<http://metacpan.org/author/JROBINSON>
 
