@@ -166,6 +166,8 @@ the object, and send an UPDATE query to the database.
 # https://github.com/dbsrgits/dbix-class/commit/0e773352
         $fred_user->update({ username => \['username || ?', '.uk'] }); 
 
+^^ you never got around to this
+
 # the DBIC syntax is a tad different from te thing above (i.e. we no longer encourage 'dummy' crap)
 The \[ .. ] syntax here is described in L<SQL::Abstract>
 documentation, used for passing bind parameters.
@@ -202,6 +204,8 @@ joining them for a select query and using data from both.
 
         $posts->update({ 'me.title' => \[ 'user.username || me.title' ] });
 
+^^ I am 95% sure this won't actually work, please try it (ideally as a passing or failing test)
+
 =back
 
 =head2 Update or create a row
@@ -221,7 +225,7 @@ joining them for a select query and using data from both.
     SET id = ?, username = ?, dob = ?, realname = ?, password = ?;
     COMMIT;
     
-DBIx::Class does not produce the non-standard MySQL "ON DUPLICATE KEY
+DBIx::Class does not yet produce the non-standard MySQL "ON DUPLICATE KEY
 UPDATE", instead it has a shortcut for combining *find* and *update*.
 
 To avoid race conditions, this should be done in a transaction.
@@ -233,7 +237,8 @@ To avoid race conditions, this should be done in a transaction.
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
 =item 2. Call the B<txn_do> method on the schema object, passing it a coderef to execute inside the transaction:
-
+^^ ouch! I didn't realize we don't do that automatically, this is a bug
+^^ probably a good idea not to mention it - I'll fix it @ GPW
         $schema->txn_do( sub {
 
 =item 3. Call the B<update_or_create> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to update data in:

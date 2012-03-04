@@ -111,12 +111,15 @@ created by the user), should also be removed.
 NOTE: This is a rather drastic action, to prevent problems in your
 application, consider de-activating accounts instead of removing them!
 
-By default, DBIx::Class will cascade deletes for the following types
+For the time being DBIx::Class defaults to cascade deletion for the following types
 of relationships: B<has_many>, B<has_one>, B<might_have>. That is, it
-will automatically issue the above statements. See
-L<DBIx::Class::Manual::SQLHackers::CREATE/Table creation with references> for how to set these up.
+will automatically issue the above statements. It is recommended not to rely
+on this implicit behavior, as it will be deprecated in a later version of DBIC.
+Instead declare proper cascading constraints in your RDBMS as described in
+L<DBIx::Class::Manual::SQLHackers::CREATE/Table creation with references>.
 
-Ideally, your database should cascade deletes for you, and will if references are correctly set up. In this case, you can turn off DBIx::Class' extra cascading statements:
+If your database is already properly set up to cascade deletes for you,
+you can noop  DBIx::Class' extra cascading statements:
 
     __PACKAGE__->has_many('posts', 
                           'MyDatabase::Schema::Result::Post', 

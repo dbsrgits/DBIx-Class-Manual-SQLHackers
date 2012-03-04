@@ -27,7 +27,8 @@ DBIx::Class::Manual::SQLHackers::DELETE - DBIx::Class for SQL Hackers - DELETE
     UPDATE users SET username = 'fred' WHERE id = 1;
     COMMIT;
 
-To create a transaction, put all your changes inside a coderef, and pass it to the B<txn_do> method on the Schema object. Transactions can also be safely nested
+To create a transaction, put all your changes inside a coderef, and pass it to the B<txn_do> method on the Schema object. Transactions can also be safely nested,
+in which case all but the top level transaction blocks become noops.
 
 =over
 

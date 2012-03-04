@@ -27,7 +27,7 @@ DBIx::Class::Manual::SQLHackers::SELECT - DBIx::Class for SQL Hackers - SELECT
     SELECT id, username, dob, realname, password
     FROM users;
 
-In DBIx::Class queries are represented by ResultSet objects. These are created by calling B<search> on existing resultsets, passing new search conditions. A query is not run against the database until data is explicitly requested. 
+In DBIx::Class queries (or more specifically query plans) are represented by ResultSet objects. These are created by calling B<search> on existing resultsets, while passing new search conditions or attributes. A query is not run against the database until data is explicitly requested. 
 
 You can either fetch all the data at once, or iterate over the results:
 
@@ -37,7 +37,7 @@ You can either fetch all the data at once, or iterate over the results:
 
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
-=item 2. The B<resultset> method returns a ResultSet representing a query with no conditions on the given B<ResultSource>:
+=item 2. The B<resultset> method returns a ResultSet representing a query retrieving all columns of the given B<ResultSource> without conditions:
 
         my $user_resultset = $schema->resultset('User');
 
@@ -54,7 +54,7 @@ You can either fetch all the data at once, or iterate over the results:
 
 =head2 Fetching column values from a Row object
 
-The Row object represents the results from a single data source table in the query. The column values can be retrieved by using the accessor methods named after the column names. (By default that is, accessors can be changed in the L<Result Class|DBIx::Class::ResulSource> if needed).
+The Row object represents the results from a single data source in the query. The column values can be retrieved by using the accessor methods named after the column names. (By default that is, accessors can be changed in the L<Result Class|DBIx::Class::ResulSource> if needed).
 
     print $user->username;
 
@@ -208,6 +208,7 @@ There's usually little reason to do this sort of query, as fetching all the data
 
 # this is completely false, is there a doc that states this that we need to fix?
 # find() takes all search() attributes, including things like prefetch
+^^ you never fixed this piece from last time
 B<find> will always pull all the columns for the found row, so use the *search* method for this.
 
 =over
@@ -225,7 +226,7 @@ B<find> will always pull all the columns for the found row, so use the *search* 
 
 =back
 
-Note that accessors for other columns not fetched will return B<undef>, which is also the perl equivalent of the SQL C<NULL> value. To discover whether a columns data has been loaded or not, use L<DBIx::Class::Row/has_column_loaded>.
+Note that accessors for other columns not fetched will return B<undef>, which is also the perl equivalent of the SQL C<NULL> value. To disambiguate between an C<undef> meaning "this column is set null" and "we never retrieved the value of this column" use L<DBIx::Class::Row/has_column_loaded>.
     
 
 =head2 SELECT with aggregates
@@ -381,6 +382,8 @@ To sort the results, use the B<order_by> attributes on a B<search> method. Conte
 =item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to sort data on:
 
 # this will not collapse results (you will get users * (amount of posts || 1) as a result, sure you want to showcase this?
+^^ this is still true for what the DBIC on CPAN, I recommend pod-commenting the example out,
+^^ and reenabling it when I finally ship the blasted thing
         my $sorted_users = $schema->resultset('User')->search(
           { },
           { '+columns' => [ qw/posts.id posts.title/ ],
@@ -439,6 +442,7 @@ Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship>
 The results will be filtered by the HAVING clause.
 
 =head2 SELECT with DISTINCT
+^^ you may or may not want to mention the distinct => 1 flag, which is an automatic "group by the selection" thing. 
 
     SELECT DISTINCT(posts.title)
     FROM posts

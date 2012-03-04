@@ -25,9 +25,9 @@ DBIx::Class::Manual::SQLHackers::INSERT - DBIx::Class for SQL Hackers - INSERT
     INSERT INTO users (id, username, dob, realname, password) 
     VALUES (1, 'fredbloggs', '1910-02-01', 'Fred Bloggs', 'secretpass');
 
-=head2 Simple insertion, populating rows
+=head2 Simple bulk insertion, populating rows
 
-The B<populate> method is for inserting chunks of data to pre-populate / initialise a database with a set of known values. In void context it uses DBI's fast "execute_array" method.
+The B<populate> method is for inserting chunks of data to pre-populate / initialise a database with a set of known values. In void context it uses DBI's optimized "execute_for_fetch" method.
 
 In scalar or list context populate is a proxy to the B<create> method (on which more below), and returns Row objects.
 
@@ -40,15 +40,15 @@ In scalar or list context populate is a proxy to the B<create> method (on which 
 =item 2. Call the B<populate> method for the ResultSource you wish to insert data into:
 
         $schema->populate('User', [
-                      [ qw/id username dob realname password/ ],
-                      [ 1, 'fredbloggs', '1910-02-01', 
-                            'Fred Bloggs', 'secretpass'],
-                      ]);
+          [qw(id  username      dob           realname       password     )],
+          [   1,  'fredbloggs', '1910-02-01', 'Fred Bloggs', 'secretpass' ],
+        ]);
 
-=back 
+=back
 
 Note that in void context you can skip passing primary key values that will be supplied by the database, and any other values that are allowed to DEFAULT. However no code in your Result classes will be run (eg InflateColumn components).
 
+# perhaps "Constructing and inserting Row objects" ?
 =head2 Inserting with Row objects
 
     INSERT INTO users (username, dob, realname, password) 
@@ -58,12 +58,14 @@ In the course of your application, you will often want to retrieve data from a u
 
 =over
 
+# perhaps s/Create/Obtain/ ?
 =item 1. Create a Schema object:
 
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
 (ideally you will always have one of these handy, no need to make many connections to the database)
 
+# perhaps s/Create/Obtain/ ?
 =item 2. Create a User object:
 
         my $newuser = $schema->resultset('User')->new({ 
@@ -163,6 +165,8 @@ This also can be shortcut using B<create>:
         my $newuser = $schema->resultset('User')->create( $user_and_post );
 
 =back
+
+### mattp is slowly working on this, do we need to mention it at all?
 
 =head2 Insert using a SELECT as input:
 
