@@ -206,10 +206,6 @@ To run the query, use the B<all> or B<next> methods show at the beginning of thi
 
 There's usually little reason to do this sort of query, as fetching all the data in a row doesn't cost any more time than fetching some of it. Unless of course your source is a View with calculations, or has huge blobs, or.. Okay, you might well want to do this occasionally.
 
-# this is completely false, is there a doc that states this that we need to fix?
-# find() takes all search() attributes, including things like prefetch
-B<find> will always pull all the columns for the found row, so use the *search* method for this.
-
 =over
 
 =item 1. Create a Schema object representing the database you are working with:
