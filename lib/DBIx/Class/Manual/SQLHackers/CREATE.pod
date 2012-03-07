@@ -24,16 +24,20 @@ DBIx::Class::Manual::SQLHackers::CREATE - DBIx::Class for SQL Hackers - CREATE
 
 =head1 Database structure
 
-### complete paragraph rewording suggestion
-###
-To use DBIx::Class, we need to teach it about the layout of the underlying database. Several methods of doing this are available.
-If you have an existing database the most straightforward way is to use the module L<DBIx::Class::Schema::Loader>, which
-will introspect your database and generate individual classes representing every table and view in your database.
-For new projects one usually writes these classes by hand as described below. If you find the methods provided by
-L<DBIx::Class> core overly verbose, you can try to define your result classes via the more concise syntax of
-L<DBIx::Class::Candy> (the result is fully compatible with L<DBIx::Class>).
+To use DBIx::Class, we need to teach it about the layout of the
+underlying database. Several methods of doing this are available.  If
+you have an existing database the most straightforward way is to use
+the module L<DBIx::Class::Schema::Loader>, which will introspect your
+database and generate individual classes representing every table and
+view in your database.  For new projects one usually writes these
+classes by hand as described below. If you find the methods provided
+by L<DBIx::Class> core overly verbose, you can try to define your
+result classes via the more concise syntax of L<DBIx::Class::Candy>
+(the result is fully compatible with L<DBIx::Class>).
 
-Once a DBIx::Class schema (set of classes describing the database) has been created, built-in methods can be used to export it as SQL DDL using L<SQL::Translator>.
+Once a DBIx::Class schema (set of classes describing the database) has
+been created, built-in methods can be used to export it as SQL DDL
+using L<SQL::Translator>.
 
 =head2 Using Loader 
 
@@ -50,6 +54,7 @@ Run the included L<dbicdump> script.
 =head2 Manual Result class creation (and understanding Loader results)
 
 # note - CREATE INDEX is a bitch these days (requires a deploy hook) - perhaps not mentioning it at all is wise-ish?
+# Leaving in as it is possible, and anyway the only index I mentioned so far below was a unique one (really should add the deploy hook stuff, this is about describing the possible, not the simple)
 This section covers the common and oft used CREATE DDL statements that DBIx::Class can replaces with Perl classes: B<CREATE TABLE>, B<CREATE VIEW> and B<CREATE INDEX>. The classes can be used to write the actual SQL DDL to the database or disc, if required.
 
 =head3 CREATE TABLE
@@ -103,6 +108,7 @@ The recommended version:
 The fully descriptive version is required if you want to have DBIx::Class create your CREATE TABLE sql for you later. Many DBIC components also use settings in the column info hashrefs to decide how to treat the data for those columns.
 
 # perhaps "... with declared relations / Declaring relationships" ? "references" doesn't sound right in the context imho
+# in SQL land a relation == a table, since I'm talking to SQL heads I don't want to get that wrong.
 =head4 Table creation with references:
 
 A relational database isn't worth much if we don't actually use references and constraints, so here is an example which constrains the B<user_id> column to only contain B<id> values from the *users* table.
@@ -227,6 +233,8 @@ To add extra unique indexes, add the B<add_unique_constraint> call to your Resul
 
     __PACKAGE__->add_unique_constraint('username_idx' => ['username']);
 
+## Should add how to create a non-unique index via deploy hook here.
+
 =head3 Outputting SQL DDL
 
 Once the DBIC schema has been defined, you can outout the SQL DDL needed to create the schema in your database (using the RDBMS-specific flavor of SQL DDL) in one of several ways.
@@ -251,6 +259,7 @@ If called with no arguments, this method will create an SQL file each for MySQL,
 
 ### IIRC this is not true - one can not do diffs without Schema::Versioned
 ### which is not loaded by default (and will soon be deprecated anyway, given how far frew and jnap have gone)
+## No thats rubbish, my usual use-case is to not use versioned at all, but have create_ddl_dir output me the diff files, thats where they come from. (unless someone has stuffed that up and I havent noticed..)
 
 =head4 SQL files for upgrades (ALTER TABLE)
 

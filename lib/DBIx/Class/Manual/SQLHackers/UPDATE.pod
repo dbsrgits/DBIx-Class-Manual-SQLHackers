@@ -226,7 +226,7 @@ joining them for a select query and using data from both.
     COMMIT;
     
 DBIx::Class does not yet produce the non-standard MySQL "ON DUPLICATE KEY
-UPDATE", instead it has a shortcut for combining *find* and *update*.
+UPDATE", instead it has a shortcut for combining B<find> and B<update>.
 
 To avoid race conditions, this should be done in a transaction.
 
@@ -239,6 +239,8 @@ To avoid race conditions, this should be done in a transaction.
 =item 2. Call the B<txn_do> method on the schema object, passing it a coderef to execute inside the transaction:
 ^^ ouch! I didn't realize we don't do that automatically, this is a bug
 ^^ probably a good idea not to mention it - I'll fix it @ GPW
+## Not entirely sure what thing you mean here.. 
+
         $schema->txn_do( sub {
 
 =item 3. Call the B<update_or_create> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to update data in:

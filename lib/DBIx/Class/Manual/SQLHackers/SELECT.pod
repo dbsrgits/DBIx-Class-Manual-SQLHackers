@@ -206,10 +206,7 @@ To run the query, use the B<all> or B<next> methods show at the beginning of thi
 
 There's usually little reason to do this sort of query, as fetching all the data in a row doesn't cost any more time than fetching some of it. Unless of course your source is a View with calculations, or has huge blobs, or.. Okay, you might well want to do this occasionally.
 
-# this is completely false, is there a doc that states this that we need to fix?
-# find() takes all search() attributes, including things like prefetch
-^^ you never fixed this piece from last time
-B<find> will always pull all the columns for the found row, so use the *search* method for this.
+B<find> will always pull all the columns for the found row, so use the B<search> method for this.
 
 =over
 
@@ -364,49 +361,52 @@ The results will contain two columns with the usual accessors, "id" and "usernam
 
 Note: Remember to disambiguate the columns when joining two tables with identical column names.
 
-=head2 SELECT with simple ORDER BY
+=begin comment
 
-    SELECT users.id, username, dob, realname, password, posts.title
-    FROM users
-    JOIN posts posts ON posts.used_id = users.id
-    ORDER BY username, posts.title;
+Commented out section as ordering by a related source does not work yet. Fix in progress, will comment back in when DBIC is updated.
 
-To sort the results, use the B<order_by> attributes on a B<search> method. Content can of course be ordered by columns in the current table, or in a joined table
+    =head2 SELECT with simple ORDER BY
 
-=over
+        SELECT users.id, username, dob, realname, password, posts.title
+        FROM users
+        JOIN posts posts ON posts.used_id = users.id
+        ORDER BY username, posts.title;
 
-=item 1. Create a Schema object representing the database you are working with:
+    To sort the results, use the B<order_by> attributes on a B<search> method. Content can of course be ordered by columns in the current table, or in a joined table
 
-        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+    =over
 
-=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to sort data on:
+    =item 1. Create a Schema object representing the database you are working with:
 
-# this will not collapse results (you will get users * (amount of posts || 1) as a result, sure you want to showcase this?
-^^ this is still true for what the DBIC on CPAN, I recommend pod-commenting the example out,
-^^ and reenabling it when I finally ship the blasted thing
-        my $sorted_users = $schema->resultset('User')->search(
-          { },
-          { '+columns' => [ qw/posts.id posts.title/ ],
-            join => 'posts',
-            order_by => [qw/username posts.title/],
-          }
-        );
+            my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
-=back
+    =item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to sort data on:
 
-Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship> between the "User" source and the "Post" source.
+            my $sorted_users = $schema->resultset('User')->search(
+              { },
+              { '+columns' => [ qw/posts.id posts.title/ ],
+                join => 'posts',
+                order_by => [qw/username posts.title/],
+              }
+            );
 
-The results will be ordered by username, then post title, ready for outputting.
+    =back
 
-Note how we have added the title of each post, this prevents us having to fire off a second query to fetch the post data to output it. The B<+columns> attribute specifies an extended set of columns to fetch, in addition to the columns of the main query table.
+    Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship> between the "User" source and the "Post" source.
 
-To retrieve the extra data, call the usual relationship accessor:
+    The results will be ordered by username, then post title, ready for outputting.
 
-    while( my $row = $sorted_users->next) {
-      print "user/post: ", $row->username;
-      print $_->title for $row->posts;
-      print "\n";
-    }
+    Note how we have added the title of each post, this prevents us having to fire off a second query to fetch the post data to output it. The B<+columns> attribute specifies an extended set of columns to fetch, in addition to the columns of the main query table.
+
+    To retrieve the extra data, call the usual relationship accessor:
+
+        while( my $row = $sorted_users->next) {
+          print "user/post: ", $row->username;
+          print $_->title for $row->posts;
+          print "\n";
+        }
+
+=end comment
 
 =head2 SELECT with HAVING
 
