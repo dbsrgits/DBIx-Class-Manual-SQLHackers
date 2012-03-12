@@ -105,8 +105,6 @@ The recommended version:
 
 The fully descriptive version is required if you want to have DBIx::Class create your CREATE TABLE sql for you later. Many DBIC components also use settings in the column info hashrefs to decide how to treat the data for those columns.
 
-# perhaps "... with declared relations / Declaring relationships" ? "references" doesn't sound right in the context imho
-# in SQL land a relation == a table, since I'm talking to SQL heads I don't want to get that wrong.
 =head4 Table creation with references:
 
 A relational database isn't worth much if we don't actually use references and constraints, so here is an example which constrains the B<user_id> column to only contain B<id> values from the *users* table.
