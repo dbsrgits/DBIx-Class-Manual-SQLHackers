@@ -112,6 +112,36 @@ the object, and send an UPDATE query to the database.
 
 See also: L</Direct update versus delayed update>.
 
+## Removed from UPDATE.pod:
+
+=head2 Update a row or rows using a column calculation
+
+    -- Yet another pointless example
+    UPDATE users
+    SET username = username || '.uk'
+    WHERE id = 1;
+
+=over
+
+=item 1. Create a Schema object representing the database you are working with:
+
+        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+
+=item 2. Call the B<find> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
+
+        my $fred_user = $schema->resultset('User')->find({ id => 1 });
+
+The Row object has an B<update> method that will change the values on
+the object, and send an UPDATE query to the database.
+
+=item 3. Call the B<update> method, passing it a hashref of new data:
+
+        $fred_user->update({ username => \['username || ?', [ {} =>  '.uk'] ] }); 
+
+The \[ .. ] syntax here is base on L<SQL::Abstract/Literal SQL with placeholders and bind values (subqueries)>, and adds some extra syntax for the "values" to be able to supply things like the exact SQL bind type and so on. This extra syntax will be documented in DBIx::Class soon.
+
+=back
+
 =head2 Update multiple rows with simple values
 
     -- Warning, pointless example!

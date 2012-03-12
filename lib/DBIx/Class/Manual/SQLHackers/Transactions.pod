@@ -1,6 +1,6 @@
 =head1 NAME
 
-DBIx::Class::Manual::SQLHackers::DELETE - DBIx::Class for SQL Hackers - DELETE
+DBIx::Class::Manual::SQLHackers::Transactions - DBIx::Class for SQL Hackers - DELETE
 
 =over
 
