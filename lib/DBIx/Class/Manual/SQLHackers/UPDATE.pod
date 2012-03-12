@@ -139,75 +139,6 @@ To update a whole set of rows, or all of them, we first need to create a ResultS
 
 =back
 
-=head2 Update a row or rows using a column calculation
-
-    -- Yet another pointless example
-    UPDATE users
-    SET username = username || '.uk'
-    WHERE id = 1;
-
-=over
-
-=item 1. Create a Schema object representing the database you are working with:
-
-        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
-
-=item 2. Call the B<find> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
-
-        my $fred_user = $schema->resultset('User')->find({ id => 1 });
-
-The Row object has an B<update> method that will change the values on
-the object, and send an UPDATE query to the database.
-
-=item 3. Call the B<update> method, passing it a hashref of new data:
-
-# this won't yet work, DBIC for now mandates the [ {} => $value ] format, the simple \[ $sql, $value1, $value2 ] will start being recognized later on 
-# the only documentation we currently have is this, if you can turn it into a DBIC pod-patch it will be freaking awesome
-# https://github.com/dbsrgits/dbix-class/commit/0e773352
-        $fred_user->update({ username => \['username || ?', '.uk'] }); 
-
-^^ you never got around to this
-
-# the DBIC syntax is a tad different from te thing above (i.e. we no longer encourage 'dummy' crap)
-The \[ .. ] syntax here is described in L<SQL::Abstract>
-documentation, used for passing bind parameters.
-
-
-=back
-
-=head2 Update a row based on data in other tables
-
-    -- Slightly less pointless example
-    UPDATE posts 
-    SET title = user.username || title
-    JOIN users user ON user.id = posts.user_id;
-
-Joining two tables for an update is a similar sort of exercise to
-joining them for a select query and using data from both.
-
-=over
-
-=item 1. Create a Schema object representing the database you are working with:
-
-        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
-
-=item 2. Call the B<search> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to update data in, joining to the second table:
-
-        my $posts = $schema->resultset('Post')->search(
-          {},
-          { join => 'user' }
-        );
-
-    The B<join> key takes as an argument a nested structure of one or more relation names (see L<DBIx::Class::Manual::SQLHackers::CREATE>).
-
-=item 3. Call the B<update> method on the resultset to run the UPDATE statement:
-
-        $posts->update({ 'me.title' => \[ 'user.username || me.title' ] });
-
-^^ I am 95% sure this won't actually work, please try it (ideally as a passing or failing test)
-
-=back
-
 =head2 Update or create a row
 
     -- MySQL non-standardness (and another silly example)
@@ -237,9 +168,6 @@ To avoid race conditions, this should be done in a transaction.
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
 =item 2. Call the B<txn_do> method on the schema object, passing it a coderef to execute inside the transaction:
-^^ ouch! I didn't realize we don't do that automatically, this is a bug
-^^ probably a good idea not to mention it - I'll fix it @ GPW
-## Not entirely sure what thing you mean here.. 
 
         $schema->txn_do( sub {
 

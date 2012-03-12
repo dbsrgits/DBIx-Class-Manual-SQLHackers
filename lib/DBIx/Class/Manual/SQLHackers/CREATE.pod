@@ -53,8 +53,6 @@ Run the included L<dbicdump> script.
 
 =head2 Manual Result class creation (and understanding Loader results)
 
-# note - CREATE INDEX is a bitch these days (requires a deploy hook) - perhaps not mentioning it at all is wise-ish?
-# Leaving in as it is possible, and anyway the only index I mentioned so far below was a unique one (really should add the deploy hook stuff, this is about describing the possible, not the simple)
 This section covers the common and oft used CREATE DDL statements that DBIx::Class can replaces with Perl classes: B<CREATE TABLE>, B<CREATE VIEW> and B<CREATE INDEX>. The classes can be used to write the actual SQL DDL to the database or disc, if required.
 
 =head3 CREATE TABLE
@@ -233,7 +231,20 @@ To add extra unique indexes, add the B<add_unique_constraint> call to your Resul
 
     __PACKAGE__->add_unique_constraint('username_idx' => ['username']);
 
-## Should add how to create a non-unique index via deploy hook here.
+=head4 NON-UNIQUE indexes
+
+    CREATE INDEX user_email_idx ON user (username, email);
+
+These are not created or used by DBIx::Class itself, but can be added so that deploying (creating DDL SQL from your Schema) can include them.
+
+The B<sqlt_deply_hook> method allows you to add L<SQL::Translator> code to your Result class. It is called with the SQL::Translator::Schema::Table object, and allows you to amend the Table before it is converted into SQL.
+
+   sub sqlt_deploy_hook {
+      my ($self, $sqlt_table) = @_;
+
+      $sqlt_table->add_index(name => 'user_email_idx', fields => ['username', 'email']);
+   }
+
 
 =head3 Outputting SQL DDL
 
@@ -256,10 +267,6 @@ Create a schema object with the a database connection (any will do), and call th
     $schema->create_ddl_dir(['SQLite', 'MySQL']);
 
 If called with no arguments, this method will create an SQL file each for MySQL, PostgreSQL and SQLite. More databases are supported by L<SQL::Translator> if necessary.
-
-### IIRC this is not true - one can not do diffs without Schema::Versioned
-### which is not loaded by default (and will soon be deprecated anyway, given how far frew and jnap have gone)
-## No thats rubbish, my usual use-case is to not use versioned at all, but have create_ddl_dir output me the diff files, thats where they come from. (unless someone has stuffed that up and I havent noticed..)
 
 =head4 SQL files for upgrades (ALTER TABLE)
 
