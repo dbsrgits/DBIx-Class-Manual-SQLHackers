@@ -1,6 +1,6 @@
 =head1 NAME
 
-DBIx::Class::Manual::SQLHackers::TOC - DBIx::Class for SQL Hackers - TOC
+DBIx::Class::Manual::SQLHackers - DBIx::Class for SQL Hackers - Table of Contents
 
 =over
 
@@ -26,7 +26,7 @@ Jess Robinson <castaway@desert-island.me.uk>, L<http://metacpan.org/author/JROBI
 
 =head1 COPYRIGHT
 
-Copyright (c) 2010 - 2011 the L</AUTHOR>
+Copyright (c) 2010 - 2012 the L</AUTHOR>
 
 =head1 LICENSE
 

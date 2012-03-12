@@ -440,7 +440,6 @@ Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship>
 The results will be filtered by the HAVING clause.
 
 =head2 SELECT with DISTINCT
-^^ you may or may not want to mention the distinct => 1 flag, which is an automatic "group by the selection" thing. 
 
     SELECT DISTINCT(posts.title)
     FROM posts
