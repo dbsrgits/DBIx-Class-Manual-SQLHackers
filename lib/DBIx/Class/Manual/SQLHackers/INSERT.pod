@@ -25,9 +25,9 @@ DBIx::Class::Manual::SQLHackers::INSERT - DBIx::Class for SQL Hackers - INSERT
     INSERT INTO users (id, username, dob, realname, password) 
     VALUES (1, 'fredbloggs', '1910-02-01', 'Fred Bloggs', 'secretpass');
 
-=head2 Simple insertion, populating rows
+=head2 Simple bulk insertion, populating rows
 
-The B<populate> method is for inserting chunks of data to pre-populate / initialise a database with a set of known values. In void context it uses DBI's fast "execute_array" method.
+The B<populate> method is for inserting chunks of data to pre-populate / initialise a database with a set of known values. In void context it uses DBI's optimized "execute_for_fetch" method.
 
 In scalar or list context populate is a proxy to the B<create> method (on which more below), and returns Row objects.
 
@@ -40,16 +40,15 @@ In scalar or list context populate is a proxy to the B<create> method (on which 
 =item 2. Call the B<populate> method for the ResultSource you wish to insert data into:
 
         $schema->populate('User', [
-                      [ qw/id username dob realname password/ ],
-                      [ 1, 'fredbloggs', '1910-02-01', 
-                            'Fred Bloggs', 'secretpass'],
-                      ]);
+          [qw(id  username      dob           realname       password     )],
+          [   1,  'fredbloggs', '1910-02-01', 'Fred Bloggs', 'secretpass' ],
+        ]);
 
-=back 
+=back
 
 Note that in void context you can skip passing primary key values that will be supplied by the database, and any other values that are allowed to DEFAULT. However no code in your Result classes will be run (eg InflateColumn components).
 
-=head2 Inserting with Row objects
+=head2 Constructing and inserting Row object
 
     INSERT INTO users (username, dob, realname, password) 
     VALUES ('fredbloggs', '1910-02-01', 'Fred Bloggs', 'secretpass');
@@ -58,11 +57,13 @@ In the course of your application, you will often want to retrieve data from a u
 
 =over
 
-=item 1. Create a Schema object:
+=item 1. Obtain a Schema object:
 
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
 (ideally you will always have one of these handy, no need to make many connections to the database)
+
+NB: DBIx::Class does not store a Singleton schema object for you, calling C<connect> again will create a new Schema object with a new database connection. Avoid doing this, store and re-use the Schema object.
 
 =item 2. Create a User object:
 
@@ -91,7 +92,7 @@ You can also shortcut these two methods if you don't need to build up the Row ob
           password  => 'secretpass',
         });
 
-Now *$newuser* is a Row object containing data that represents what is in the database.
+Now B<$newuser> is a Row object containing data that represents what is in the database.
 
 =back
 
@@ -164,10 +165,3 @@ This also can be shortcut using B<create>:
 
 =back
 
-=head2 Insert using a SELECT as input:
-
-    INSERT INTO users (id, username, dob, realname, password) 
-    SELECT (1, 'fredbloggs', '1910-02-01', 'Fred Bloggs', 'secretpass')
-    FROM nowhere;
-
-This is a TODO item for DBIC.

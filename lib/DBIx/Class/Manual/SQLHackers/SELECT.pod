@@ -27,7 +27,7 @@ DBIx::Class::Manual::SQLHackers::SELECT - DBIx::Class for SQL Hackers - SELECT
     SELECT id, username, dob, realname, password
     FROM users;
 
-In DBIx::Class queries are represented by ResultSet objects. These are created by calling B<search> on existing resultsets, passing new search conditions. A query is not run against the database until data is explicitly requested. 
+In DBIx::Class queries (or more specifically query plans) are represented by ResultSet objects. These are created by calling B<search> on existing resultsets, while passing new search conditions or attributes. A query is not run against the database until data is explicitly requested. 
 
 You can either fetch all the data at once, or iterate over the results:
 
@@ -37,7 +37,7 @@ You can either fetch all the data at once, or iterate over the results:
 
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
-=item 2. The B<resultset> method returns a ResultSet representing a query with no conditions on the given B<ResultSource>:
+=item 2. The B<resultset> method returns a ResultSet representing a query retrieving all columns of the given B<ResultSource> without conditions:
 
         my $user_resultset = $schema->resultset('User');
 
@@ -54,7 +54,7 @@ You can either fetch all the data at once, or iterate over the results:
 
 =head2 Fetching column values from a Row object
 
-The Row object represents the results from a single data source table in the query. The column values can be retrieved by using the accessor methods named after the column names. (By default that is, accessors can be changed in the L<Result Class|DBIx::Class::ResulSource> if needed).
+The Row object represents the results from a single data source in the query. The column values can be retrieved by using the accessor methods named after the column names. (By default that is, accessors can be changed in the L<Result Class|DBIx::Class::ResulSource> if needed).
 
     print $user->username;
 
@@ -221,7 +221,7 @@ There's usually little reason to do this sort of query, as fetching all the data
 
 =back
 
-Note that accessors for other columns not fetched will return B<undef>, which is also the perl equivalent of the SQL C<NULL> value. To discover whether a columns data has been loaded or not, use L<DBIx::Class::Row/has_column_loaded>.
+Note that accessors for other columns not fetched will return B<undef>, which is also the perl equivalent of the SQL C<NULL> value. To disambiguate between an C<undef> meaning "this column is set null" and "we never retrieved the value of this column" use L<DBIx::Class::Row/has_column_loaded>.
     
 
 =head2 SELECT with aggregates
@@ -359,47 +359,52 @@ The results will contain two columns with the usual accessors, "id" and "usernam
 
 Note: Remember to disambiguate the columns when joining two tables with identical column names.
 
-=head2 SELECT with simple ORDER BY
+=begin comment
 
-    SELECT users.id, username, dob, realname, password, posts.title
-    FROM users
-    JOIN posts posts ON posts.used_id = users.id
-    ORDER BY username, posts.title;
+Commented out section as ordering by a related source does not work yet. Fix in progress, will comment back in when DBIC is updated.
 
-To sort the results, use the B<order_by> attributes on a B<search> method. Content can of course be ordered by columns in the current table, or in a joined table
+    =head2 SELECT with simple ORDER BY
 
-=over
+        SELECT users.id, username, dob, realname, password, posts.title
+        FROM users
+        JOIN posts posts ON posts.used_id = users.id
+        ORDER BY username, posts.title;
 
-=item 1. Create a Schema object representing the database you are working with:
+    To sort the results, use the B<order_by> attributes on a B<search> method. Content can of course be ordered by columns in the current table, or in a joined table
 
-        my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
+    =over
 
-=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to sort data on:
+    =item 1. Create a Schema object representing the database you are working with:
 
-# this will not collapse results (you will get users * (amount of posts || 1) as a result, sure you want to showcase this?
-        my $sorted_users = $schema->resultset('User')->search(
-          { },
-          { '+columns' => [ qw/posts.id posts.title/ ],
-            join => 'posts',
-            order_by => [qw/username posts.title/],
-          }
-        );
+            my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
-=back
+    =item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to sort data on:
 
-Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship> between the "User" source and the "Post" source.
+            my $sorted_users = $schema->resultset('User')->search(
+              { },
+              { '+columns' => [ qw/posts.id posts.title/ ],
+                join => 'posts',
+                order_by => [qw/username posts.title/],
+              }
+            );
 
-The results will be ordered by username, then post title, ready for outputting.
+    =back
 
-Note how we have added the title of each post, this prevents us having to fire off a second query to fetch the post data to output it. The B<+columns> attribute specifies an extended set of columns to fetch, in addition to the columns of the main query table.
+    Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship> between the "User" source and the "Post" source.
 
-To retrieve the extra data, call the usual relationship accessor:
+    The results will be ordered by username, then post title, ready for outputting.
 
-    while( my $row = $sorted_users->next) {
-      print "user/post: ", $row->username;
-      print $_->title for $row->posts;
-      print "\n";
-    }
+    Note how we have added the title of each post, this prevents us having to fire off a second query to fetch the post data to output it. The B<+columns> attribute specifies an extended set of columns to fetch, in addition to the columns of the main query table.
+
+    To retrieve the extra data, call the usual relationship accessor:
+
+        while( my $row = $sorted_users->next) {
+          print "user/post: ", $row->username;
+          print $_->title for $row->posts;
+          print "\n";
+        }
+
+=end comment
 
 =head2 SELECT with HAVING
 
@@ -435,6 +440,7 @@ Here "posts" refers to the name of the L<Relationship|DBIx::Class::Relationship>
 The results will be filtered by the HAVING clause.
 
 =head2 SELECT with DISTINCT
+^^ you may or may not want to mention the distinct => 1 flag, which is an automatic "group by the selection" thing. 
 
     SELECT DISTINCT(posts.title)
     FROM posts

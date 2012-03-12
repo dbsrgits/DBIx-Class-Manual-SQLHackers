@@ -24,10 +24,20 @@ DBIx::Class::Manual::SQLHackers::CREATE - DBIx::Class for SQL Hackers - CREATE
 
 =head1 Database structure
 
-To use DBIx::Class, we need to teach it about the layout of the underlying database. Several methods are supported. The built-in method involves defining your database structure as a set of perl classes, one per resultsource (table, view, etc). The other oft used method is to import the definitions from an existing database using the module 
-L<DBIx::Class::Schema::Loader>.
+To use DBIx::Class, we need to teach it about the layout of the
+underlying database. Several methods of doing this are available.  If
+you have an existing database the most straightforward way is to use
+the module L<DBIx::Class::Schema::Loader>, which will introspect your
+database and generate individual classes representing every table and
+view in your database.  For new projects one usually writes these
+classes by hand as described below. If you find the methods provided
+by L<DBIx::Class> core overly verbose, you can try to define your
+result classes via the more concise syntax of L<DBIx::Class::Candy>
+(the result is fully compatible with L<DBIx::Class>).
 
-Once a DBIx::Class schema (set of classes describing the database) has been created, built-in methods can be used to export it as SQL DDL using L<SQL::Translator>.
+Once a DBIx::Class schema (set of classes describing the database) has
+been created, built-in methods can be used to export it as SQL DDL
+using L<SQL::Translator>.
 
 =head2 Using Loader 
 
@@ -95,6 +105,8 @@ The recommended version:
 
 The fully descriptive version is required if you want to have DBIx::Class create your CREATE TABLE sql for you later. Many DBIC components also use settings in the column info hashrefs to decide how to treat the data for those columns.
 
+# perhaps "... with declared relations / Declaring relationships" ? "references" doesn't sound right in the context imho
+# in SQL land a relation == a table, since I'm talking to SQL heads I don't want to get that wrong.
 =head4 Table creation with references:
 
 A relational database isn't worth much if we don't actually use references and constraints, so here is an example which constrains the B<user_id> column to only contain B<id> values from the *users* table.
@@ -142,10 +154,11 @@ In DBIx::Class this is achieved by adding L<relationship|DBIx::Class::Relationsh
     __PACKAGE__->belongs_to('user', 'MyDatabase::Schema::Result::User', 'user_id');
     1;
 
-The B<belongs_to> relation creates a B<user> method which returns the user object, as well as storing JOIN information to be used when querying with JOINs. The joined colums on the remote side are taken from the remote PRIMARY KEY value, if not specified, as in this example. 
+The B<belongs_to> relation creates a B<user> method which returns the user object, as well as storing JOIN information to be used when querying with JOINs. When not explicitly specified (as in this example), the columns for the JOIN clause default to the remote PRIMARY KEY column set.
 
 Relationships may also be specified with completely custom JOIN conditions, using any columns, whether the database has them defined as constraints or not, or literal values.
 
+Each relationship declaration in DBIC is one-way only.
 To allow access from the B<user> object back to the posts they have written, we need to define another relationship in the User class:
 
     __PACKAGE__->has_many('posts', 'MyDatabase::Schema::Result::Post', 'user_id');
@@ -217,6 +230,21 @@ In DBIx::Class this can have a Result Class of its own:
 To add extra unique indexes, add the B<add_unique_constraint> call to your Result Class.
 
     __PACKAGE__->add_unique_constraint('username_idx' => ['username']);
+
+=head4 NON-UNIQUE indexes
+
+    CREATE INDEX user_email_idx ON user (username, email);
+
+These are not created or used by DBIx::Class itself, but can be added so that deploying (creating DDL SQL from your Schema) can include them.
+
+The B<sqlt_deply_hook> method allows you to add L<SQL::Translator> code to your Result class. It is called with the SQL::Translator::Schema::Table object, and allows you to amend the Table before it is converted into SQL.
+
+   sub sqlt_deploy_hook {
+      my ($self, $sqlt_table) = @_;
+
+      $sqlt_table->add_index(name => 'user_email_idx', fields => ['username', 'email']);
+   }
+
 
 =head3 Outputting SQL DDL
 
