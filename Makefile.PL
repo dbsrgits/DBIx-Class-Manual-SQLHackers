@@ -6,7 +6,7 @@ use 5.006;
 use inc::Module::Install '1.01';
 
 version  '1.0';
-all_from 'lib/DBIx/Class/Manual/SQLHackers/TOC.pod';
+all_from 'lib/DBIx/Class/Manual/SQLHackers.pod';
 
 homepage 'http://dbix-class.org/manual/';
 resources 'IRC'         => 'irc://irc.perl.org/#dbix-class';
