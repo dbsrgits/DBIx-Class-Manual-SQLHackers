@@ -1,6 +1,10 @@
+package DBIx::Class::Manual::SQLHackers;
+
+our $VERSION = '1.1';
+
 =head1 NAME
 
-DBIx::Class::Manual::SQLHackers - DBIx::Class for SQL Hackers - Table of Contents
+DBIx::Class::Manual::SQLHackers - DBIC for SQLHackers Table of Contents
 
 =over
 
