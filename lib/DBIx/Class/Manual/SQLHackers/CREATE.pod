@@ -53,11 +53,11 @@ Run the included L<dbicdump> script.
 
 =head2 Manual Result class creation (and understanding Loader results)
 
-This section covers the common and oft used CREATE DDL statements that DBIx::Class can replaces with Perl classes: B<CREATE TABLE>, B<CREATE VIEW> and B<CREATE INDEX>. The classes can be used to write the actual SQL DDL to the database or disc, if required.
+This section covers the common and oft used CREATE DDL statements that DBIx::Class can replace with Perl classes: B<CREATE TABLE>, B<CREATE VIEW> and B<CREATE INDEX>. The classes can be used to write the actual SQL DDL to the database or disc, if required.
 
 =head3 CREATE TABLE
 
-=head4 Standard basic table creation in SQL:
+=head4 Standard basic table creation in SQL
 
     CREATE TABLE users (
        id INTEGER AUTO_INCREMENT,
@@ -105,7 +105,7 @@ The recommended version:
 
 The fully descriptive version is required if you want to have DBIx::Class create your CREATE TABLE sql for you later. Many DBIC components also use settings in the column info hashrefs to decide how to treat the data for those columns.
 
-=head4 Table creation with references:
+=head4 Table creation with references
 
 A relational database isn't worth much if we don't actually use references and constraints, so here is an example which constrains the B<user_id> column to only contain B<id> values from the *users* table.
 
@@ -180,7 +180,7 @@ In DBIx::Class this can have a Result Class of its own:
     # Defaults to 'DBIx::Class::ResultSource::Table' unless specified like this
     __PACKAGE__->table_class('DBIx::Class::ResultSource::View');
 
-    __PACKAGE__->table('user_posts');
+    __PACKAGE__->table('userposts');
 
     # Do not emit SQL DDL for this particular resultsource
     __PACKAGE__->result_source_instance->is_virtual(1);
@@ -217,7 +217,7 @@ In DBIx::Class this can have a Result Class of its own:
       },
 
     );
-    __PACKAGE__->set_primary_key('user_id, post_id');
+    __PACKAGE__->set_primary_key('user_id', 'post_id');
 
 =head3 CREATE INDEX
 
@@ -233,9 +233,9 @@ To add extra unique indexes, add the B<add_unique_constraint> call to your Resul
 
     CREATE INDEX user_email_idx ON user (username, email);
 
-These are not created or used by DBIx::Class itself, but can be added so that deploying (creating DDL SQL from your Schema) can include them.
+These are not created or used by DBIx::Class itself, but can be added so that deploying (creating DDL SQL from your schema) can include them.
 
-The B<sqlt_deply_hook> method allows you to add L<SQL::Translator> code to your Result class. It is called with the SQL::Translator::Schema::Table object, and allows you to amend the Table before it is converted into SQL.
+The B<sqlt_deploy_hook> method allows you to add L<SQL::Translator> code to your Result class. It is called with the SQL::Translator::Schema::Table object, and allows you to amend the Table before it is converted into SQL.
 
    sub sqlt_deploy_hook {
       my ($self, $sqlt_table) = @_;

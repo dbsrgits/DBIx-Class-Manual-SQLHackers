@@ -48,13 +48,13 @@ method on it. B<delete> can be called on any result row object.
 =back
 
 This can also be done as one statement, skipping the extra temporary
-variable, if it is not needed later:
+variable if it is not needed later:
 
     $schema->resultset('User')->find({ id => 1 })->delete;
 
 In the first variant, the $fred_user row object will still contain the
 last known contents of Fred's data. A call to $fred_user->L<in_storage|DBIx::Class::Row/in_storage> will return
-false (0), showing that the row object is no longer connected to a actual
+false (0), showing that the row object is no longer connected to an actual
 database row.
 
 =head2 Delete one or more rows based on a WHERE clause
@@ -84,11 +84,11 @@ the B<delete> method on it directly.
 =back
 
 Unlike the single row deletion above, the contents of the rows to be
-deleted are never fetched from the database, so no record of them now
-remains.
+deleted are never fetched from the database, so no record of them
+remains afterwards.
 
 NOTE: Calling B<delete> on a ResultSet object will not run any
-overridden B<delete> methods in your Result Classes or any loaded
+overridden B<delete> methods in your Result classes or any loaded
 Components. To force these to run, call B<delete_all> instead:
 
     $old_posts->delete_all();
@@ -104,11 +104,11 @@ This will also issue a separate delete statement for each row to be removed.
     WHERE user_id = 1;
 
 
-Cascading deletes ensure the integrity of your data, if a User row is
+Cascading deletes ensure the integrity of your data. If a User row is
 removed, then any items belonging to that user (for example comments
-created by the user), should also be removed.
+created by the user) should also be removed.
 
-NOTE: This is a rather drastic action, to prevent problems in your
+NOTE: This is a rather drastic action. To prevent problems in your
 application, consider de-activating accounts instead of removing them!
 
 For the time being DBIx::Class defaults to cascade deletion for the
@@ -121,12 +121,10 @@ L<DBIx::Class::Manual::SQLHackers::CREATE/Table creation with
 references>.
 
 If your database is already properly set up to cascade deletes for you,
-you can noop  DBIx::Class' extra cascading statements:
+you can turn off DBIx::Class' extra cascading statements:
 
     __PACKAGE__->has_many('posts', 
                           'MyDatabase::Schema::Result::Post', 
                           'user_id',
                           { cascade_delete => 0 });
-
-
 

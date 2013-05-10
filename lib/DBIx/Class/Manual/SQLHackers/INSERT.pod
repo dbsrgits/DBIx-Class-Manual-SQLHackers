@@ -46,7 +46,7 @@ In scalar or list context populate is a proxy to the B<create> method (on which 
 
 =back
 
-Note that in void context you can skip passing primary key values that will be supplied by the database, and any other values that are allowed to DEFAULT. However no code in your Result classes will be run (eg InflateColumn components).
+Note that in void context you can skip passing primary key values that will be supplied by the database, and any other values that are allowed to DEFAULT. However no code in your Result classes will be run (e.g. InflateColumn components).
 
 =head2 Constructing and inserting Row object
 
@@ -61,7 +61,7 @@ In the course of your application, you will often want to retrieve data from a u
 
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
-(ideally you will always have one of these handy, no need to make many connections to the database)
+(Ideally you will always have one of these handy, no need to make many connections to the database.)
 
 NB: DBIx::Class does not store a Singleton schema object for you, calling C<connect> again will create a new Schema object with a new database connection. Avoid doing this, store and re-use the Schema object.
 
@@ -74,13 +74,13 @@ NB: DBIx::Class does not store a Singleton schema object for you, calling C<conn
           password  => 'secretpass',
         });
 
-    $newuser is now a DBIx::Class::Row object, containing uninserted data. This can be verified by calling $newuser->in_storage, which will return false.
+B<$newuser> is now a DBIx::Class::Row object, containing uninserted data. This can be verified by calling C<< $newuser->in_storage >>, which will return false.
 
-=item 3. Insert the users data into the database:
+=item 3. Insert the user's data into the database:
 
         $newuser->insert();
 
-    $newuser has been updated to contain the auto-incremented id value in its primary key field (id). $newuser->in_storage now returns true.
+$newuser has been updated to contain the auto-incremented id value in its primary key field (id). C<< $newuser->in_storage >> now returns true.
 
 You can also shortcut these two methods if you don't need to build up the Row object before inserting:
 

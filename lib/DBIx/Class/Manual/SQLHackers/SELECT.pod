@@ -54,7 +54,7 @@ You can either fetch all the data at once, or iterate over the results:
 
 =head2 Fetching column values from a Row object
 
-The Row object represents the results from a single data source in the query. The column values can be retrieved by using the accessor methods named after the column names. (By default that is, accessors can be changed in the L<Result Class|DBIx::Class::ResulSource> if needed).
+The Row object represents the results from a single data source in the query. The column values can be retrieved by using the accessor methods named after the column names. (By default that is; accessors can be changed in the L<Result Class|DBIx::Class::ResulSource> if needed.)
 
     print $user->username;
 
@@ -116,7 +116,7 @@ B<find> also works well on unique constraints, for example the username of our u
     FROM users
     WHERE dob = '1910-02-01';
 
-To select all users born on the date '1910-02-01', we can use the B<search> method to prepare a query. Search returns a new resultset with the search conditions stored in it, it does not run the query on the database.
+To select all users born on the date '1910-02-01', we can use the B<search> method to prepare a query. Search returns a new resultset with the search conditions stored in it; it does not run the query on the database.
 
 =over
 
@@ -136,39 +136,67 @@ To run the query, use the B<all> or B<next> methods shown at the beginning of th
 
 =head2 SELECT with different WHERE conditions
 
-Below are shown some common SQL where conditions. The syntax for these is parsed by a module called L<SQL::Abstract> which DBIx::Class uses. They can all be passed to the B<search> method as conditions.
+Shown below are some common SQL WHERE conditions. The syntax for these is parsed by a module called L<SQL::Abstract>, which DBIx::Class uses. They can all be passed to the B<search> method as conditions.
 
     SELECT id, username, dob, realname, password
     FROM users
     WHERE username LIKE 'fred%';
 
-    my $name_search = $schema->resultset('User')->search(
-      { username => { '-like' => 'fred%' } }
-    );
+=cut
+
+=pod
+
+        my $name_search = $schema->resultset('User')->search(
+          { username => { '-like' => 'fred%' } }
+        );
+
+=cut
+
+=pod
 
     SELECT id, username, dob, realname, password
     FROM users
     WHERE dob BETWEEN '1910-01-01' AND '1910-12-31';
 
-    my $year_dob_search = $schema->resultset('User')->search(
-      { dob => { '-between' => ['1910-01-01', '1910-12-31'] } }
-    );
+=cut
+
+=pod
+
+        my $year_dob_search = $schema->resultset('User')->search(
+          { dob => { '-between' => ['1910-01-01', '1910-12-31'] } }
+        );
+
+=cut
+
+=pod
 
     SELECT id, username, dob, realname, password
     FROM users
     WHERE dob IN ('1910-02-01', '1910-02-02');
 
-    my $feb_dob_search = $schema->resultset('User')->search(
-      { dob => { '-in' => ['1910-02-01', '1910-02-02'] } }
-    );
+=cut
+
+=pod
+
+        my $feb_dob_search = $schema->resultset('User')->search(
+          { dob => { '-in' => ['1910-02-01', '1910-02-02'] } }
+        );
+
+=cut
+
+=pod
 
     SELECT id, username, dob, realname, password
     FROM users
     WHERE dob >= 1911-01-01;
     
-    my $next_year_dob = $schema->resultset('User')->search(
-      { dob => { '>=', '1911-01-01' } }
-    );
+=cut
+
+=pod
+
+        my $next_year_dob = $schema->resultset('User')->search(
+          { dob => { '>=', '1911-01-01' } }
+        );
     
 
 =head2 SELECT with WHERE condition on JOINed table
@@ -195,7 +223,7 @@ The second argument to B<search> is a hashref of attributes to apply to the quer
 
 =back
 
-Note that the string "user", used twice here, refers to the B<name> of the L<Relationship|DBIx::Class::Manual::SQLHackers::CREATE> between the "Post" source and the "User" source. All dealings with related tables are refered to by relationship names, not table names.
+Note that the string "user", used twice here, refers to the B<name> of the L<Relationship|DBIx::Class::Relationship> between the "Post" source and the "User" source. All dealings with related tables are referred to by relationship names, not table names.
 
 To run the query, use the B<all> or B<next> methods show at the beginning of this page.
 
@@ -221,7 +249,7 @@ There's usually little reason to do this sort of query, as fetching all the data
 
 =back
 
-Note that accessors for other columns not fetched will return B<undef>, which is also the perl equivalent of the SQL C<NULL> value. To disambiguate between an C<undef> meaning "this column is set null" and "we never retrieved the value of this column" use L<DBIx::Class::Row/has_column_loaded>.
+Note that accessors for other columns not fetched will return B<undef>, which is also the perl equivalent of the SQL C<NULL> value. To disambiguate between an C<undef> meaning "this column is set null" and "we never retrieved the value of this column" use L<DBIx::Class::Row::has_column_loaded|DBIx::Class::Row/has_column_loaded>.
     
 
 =head2 SELECT with aggregates
@@ -229,7 +257,7 @@ Note that accessors for other columns not fetched will return B<undef>, which is
     SELECT COUNT(*)
     FROM users;
 
-To find out how many users exist. This simple one can be achieved with a built-in method, B<count>.
+Finding out how many users exist can be achieved with a built-in method, B<count>.
 
 =over
 
@@ -237,7 +265,7 @@ To find out how many users exist. This simple one can be achieved with a built-i
 
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
-=item 2. Call the *count* method on the resultset for the [Source] you wish to fetch data from:
+=item 2. Call the B<count> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from:
 
         my $posts_count = $schema->resultset('Post')->count();
 
@@ -258,14 +286,13 @@ A rather pointless exercise in summing an entire "amount" column from an imagina
 
 =item 2. Call the B<get_column> method on the resultset for the L<ResultSource|DBIx::Class::ResultSource> you wish to fetch data from, then the B<sum> method:
 
-        my $sum_prices = $schema->resultset('Price')->get_column('amount')
-          ->sum();
+        my $sum_prices = $schema->resultset('Price')->get_column('amount')->sum();
 
 =back
 
 The result is just a number.
 
-The alternate way uses the B<search> method and is easier to build further refinements into.
+The alternative way uses the B<search> method and is easier to build further refinements into.
 
 =over
 
@@ -337,7 +364,7 @@ To group your results, use the B<group_by> attribute on a B<search> method. We a
 
         my $schema = MyDatabase::Schema->connect('dbi:SQLite:my.db');
 
-=item 2. Call the *search* method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to group data on:
+=item 2. Call the B<search> method on the resultset of the L<ResultSource|DBIx::Class::ResultSource> you wish to group data on:
 
         my $posts_count_per_user = $schema->resultset('User')->search(
           { },
@@ -490,7 +517,7 @@ The result will be an arrayref of the actual values. If a ResultSet object is ne
     FROM users
     FOR UPDATE
 
-To fetch data and lock it for updating from other transactions, use the B<for> attribute and pass it the value B<update>. This should be done inside a L<Transaction|DBIx::Class::Manual::SQLHackers::Transaction>.
+To fetch data and lock it for updating from other transactions, use the B<for> attribute and pass it the value B<update>. This should be done inside a L<Transaction|DBIx::Class::Manual::SQLHackers::Transactions>.
 
 =over
 
@@ -509,7 +536,7 @@ To fetch data and lock it for updating from other transactions, use the B<for> a
 
 =back
 
-The resultset and rows will be returned as normal, and can be used to update the rows without worrying about other 
+The resultset and rows will be returned as normal, and can be used to update the rows without worrying about other processes modifying the table behind your back.
 
 =head2 SELECT with LIMIT and OFFSET
 
@@ -540,4 +567,3 @@ To reduce the set of rows fetched, use the B<rows> and B<page> attributes. The v
 This will return exactly 10 row objects, sorted by descending date of birth of the users, starting at the 11th row of the sorted result.
 
 =back
-
