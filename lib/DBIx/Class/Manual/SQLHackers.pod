@@ -1,6 +1,6 @@
 package DBIx::Class::Manual::SQLHackers;
 
-our $VERSION = '1.2';
+our $VERSION = '1.200001';
 
 =head1 NAME
 
